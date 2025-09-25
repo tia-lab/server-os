@@ -1,4 +1,7 @@
+mod config;
+
 use anyhow::Result;
+use config::{ServerOsConfig, ToolCommand};
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEventKind},
     execute,
@@ -43,70 +46,78 @@ struct App {
     selected_tool: usize,
     system: System,
     last_update: Instant,
+    config: ServerOsConfig,
+    last_error: Option<String>,
 }
 
 impl App {
-    fn new() -> Self {
+    fn new() -> Result<Self> {
+        // Load configuration
+        let config = ServerOsConfig::load().unwrap_or_else(|e| {
+            eprintln!("Warning: Failed to load config, using defaults: {}", e);
+            ServerOsConfig::default()
+        });
+
         let tools = vec![
             Tool {
                 name: "finder".to_string(),
-                command: "xplr".to_string(),
+                command: config.tools.finder.command.clone(),
                 description: "Interactive file manager".to_string(),
                 icon: "📁".to_string(),
                 category: ToolCategory::Core,
             },
             Tool {
                 name: "search".to_string(),
-                command: "television".to_string(),
+                command: config.tools.search.command.clone(),
                 description: "Fuzzy finder".to_string(),
                 icon: "🔍".to_string(),
                 category: ToolCategory::Core,
             },
             Tool {
                 name: "disk".to_string(),
-                command: "wiper".to_string(),
+                command: config.tools.disk.command.clone(),
                 description: "Disk analyzer".to_string(),
                 icon: "💾".to_string(),
                 category: ToolCategory::Core,
             },
             Tool {
                 name: "system".to_string(),
-                command: "bottom".to_string(),
+                command: config.tools.system.command.clone(),
                 description: "System monitor".to_string(),
                 icon: "📊".to_string(),
                 category: ToolCategory::System,
             },
             Tool {
                 name: "network".to_string(),
-                command: "bandwhich".to_string(),
+                command: config.tools.network.command.clone(),
                 description: "Network monitor".to_string(),
                 icon: "🌐".to_string(),
                 category: ToolCategory::System,
             },
             Tool {
                 name: "trace".to_string(),
-                command: "trippy".to_string(),
+                command: config.tools.trace.command.clone(),
                 description: "Network diagnostics".to_string(),
                 icon: "📍".to_string(),
                 category: ToolCategory::System,
             },
             Tool {
                 name: "guard".to_string(),
-                command: "heimdall".to_string(),
+                command: config.security.guard.command.clone(),
                 description: "Intrusion detection".to_string(),
                 icon: "🛡️".to_string(),
                 category: ToolCategory::Security,
             },
             Tool {
                 name: "firewall".to_string(),
-                command: "dfw".to_string(),
+                command: config.security.firewall.command.clone(),
                 description: "Docker firewall".to_string(),
                 icon: "🔥".to_string(),
                 category: ToolCategory::Security,
             },
             Tool {
                 name: "waf".to_string(),
-                command: "aegis".to_string(),
+                command: config.security.waf.command.clone(),
                 description: "Web application firewall".to_string(),
                 icon: "🌐".to_string(),
                 category: ToolCategory::Security,
@@ -116,13 +127,15 @@ impl App {
         let mut system = System::new_all();
         system.refresh_all();
 
-        Self {
+        Ok(Self {
             tools,
             current_tab: 0,
             selected_tool: 0,
             system,
             last_update: Instant::now(),
-        }
+            config,
+            last_error: None,
+        })
     }
 
     fn next_tool(&mut self) {
@@ -149,34 +162,66 @@ impl App {
         }
     }
 
-    fn launch_tool(&self) -> Result<()> {
+    fn launch_tool(&mut self) -> Result<()> {
         let tool = &self.tools[self.selected_tool];
 
-        // Clear terminal
-        disable_raw_mode()?;
-        execute!(io::stdout(), LeaveAlternateScreen, DisableMouseCapture)?;
+        // Clear any previous error
+        self.last_error = None;
 
-        println!("🚀 Launching {}...", tool.name);
+        // Get tool configuration
+        if let Some(tool_cmd) = self.config.get_tool_config(&tool.name) {
+            if !tool_cmd.enabled {
+                self.last_error = Some(format!("Tool '{}' is disabled", tool.name));
+                return Ok(());
+            }
 
-        // Execute the tool
-        let status = Command::new(&tool.command)
-            .stdin(Stdio::inherit())
-            .stdout(Stdio::inherit())
-            .stderr(Stdio::inherit())
-            .status();
+            // Clear terminal
+            disable_raw_mode()?;
+            execute!(io::stdout(), LeaveAlternateScreen, DisableMouseCapture)?;
 
-        match status {
-            Ok(_) => println!("✅ {} completed", tool.name),
-            Err(e) => println!("❌ Failed to launch {}: {}", tool.name, e),
+            println!("🚀 Launching {}...", tool.name);
+
+            // Build command with configuration
+            let mut cmd = Command::new(&tool_cmd.command);
+
+            // Add config file if specified
+            if let Some(ref config_file) = tool_cmd.config_file {
+                cmd.args(&["--config", config_file]);
+            }
+
+            // Add extra arguments from configuration
+            if !tool_cmd.extra_args.is_empty() {
+                cmd.args(&tool_cmd.extra_args);
+            }
+
+            // Execute the tool
+            let status = cmd
+                .stdin(Stdio::inherit())
+                .stdout(Stdio::inherit())
+                .stderr(Stdio::inherit())
+                .status();
+
+            match status {
+                Ok(_) => {},  // Tool completed successfully
+                Err(e) => {
+                    self.last_error = Some(format!("Failed to launch {}: {}", tool.name, e));
+                    println!("❌ Failed to launch {}: {}", tool.name, e);
+                    println!("Press Enter to return to OS dashboard...");
+                    let mut input = String::new();
+                    io::stdin().read_line(&mut input)?;
+                }
+            }
+
+            // Restore terminal
+            enable_raw_mode()?;
+            execute!(io::stdout(), EnterAlternateScreen, EnableMouseCapture)?;
+
+            // Force system info refresh after tool exit
+            self.system.refresh_all();
+            self.last_update = Instant::now();
+        } else {
+            self.last_error = Some(format!("Tool '{}' not found in configuration", tool.name));
         }
-
-        println!("Press Enter to return to OS dashboard...");
-        let mut input = String::new();
-        io::stdin().read_line(&mut input)?;
-
-        // Restore terminal
-        enable_raw_mode()?;
-        execute!(io::stdout(), EnterAlternateScreen, EnableMouseCapture)?;
 
         Ok(())
     }
@@ -198,7 +243,7 @@ fn main() -> Result<()> {
     let mut terminal = Terminal::new(backend)?;
 
     // Create app
-    let mut app = App::new();
+    let mut app = App::new()?;
 
     // Main loop
     loop {
@@ -217,7 +262,7 @@ fn main() -> Result<()> {
                     KeyCode::BackTab => app.previous_tab(),
                     KeyCode::Enter => {
                         if let Err(e) = app.launch_tool() {
-                            eprintln!("Error launching tool: {}", e);
+                            app.last_error = Some(format!("Error launching tool: {}", e));
                         }
                     }
                     _ => {}
@@ -252,7 +297,7 @@ fn ui(f: &mut Frame, app: &mut App) {
         .split(size);
 
     // Header
-    let header = Paragraph::new("🛡️ server-os Dashboard")
+    let header = Paragraph::new(app.config.dashboard.title.clone())
         .style(
             Style::default()
                 .fg(Color::Cyan)
@@ -278,7 +323,7 @@ fn ui(f: &mut Frame, app: &mut App) {
         .split(main_chunks[1]);
 
     render_system_info(f, app, info_chunks[0]);
-    render_security_status(f, info_chunks[1]);
+    render_security_status(f, app, info_chunks[1]);
 
     // Footer
     let footer = Paragraph::new("↑↓/jk: Navigate | Enter: Launch | Tab: Switch | q/Esc: Quit")
@@ -348,13 +393,22 @@ fn render_system_info(f: &mut Frame, app: &App, area: Rect) {
     f.render_widget(memory_gauge, info_chunks[1]);
 }
 
-fn render_security_status(f: &mut Frame, area: Rect) {
-    let security_text = vec![
+fn render_security_status(f: &mut Frame, app: &App, area: Rect) {
+    let mut security_text = vec![
         Line::from("🔒 Firewall: Active"),
         Line::from("🛡️ IDS: Monitoring"),
         Line::from("🚫 Blocked: 0 IPs"),
         Line::from("⚠️ Alerts: 0 new"),
     ];
+
+    // Add error message if present
+    if let Some(ref error) = app.last_error {
+        security_text.push(Line::from(""));
+        security_text.push(Line::from(Span::styled(
+            format!("❌ Error: {}", error),
+            Style::default().fg(Color::Red),
+        )));
+    }
 
     let security_panel = Paragraph::new(security_text)
         .block(

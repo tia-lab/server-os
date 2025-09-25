@@ -1,0 +1,174 @@
+# 🛡️ server-os Unified Configuration
+# Security-Hardened Server Operating System
+# Complete Rust TUI Stack + Security Tools
+
+[server]
+name = "server-os"
+version = "0.1.0"
+hostname = "secure-server"
+timezone = "UTC"
+log_level = "info"
+log_file = "/var/log/server-os/server-os.log"
+
+# Dashboard Configuration
+[dashboard]
+title = "🛡️ server-os Dashboard"
+refresh_interval = 1000  # milliseconds
+theme = "dark"
+show_system_info = true
+show_security_status = true
+
+# Core TUI Tools Configuration
+[tools]
+data_dir = "/opt/server-os/tools"
+
+[tools.finder]
+enabled = true
+command = "xplr"
+config_file = "/opt/server-os/configs/xplr.yml"
+bookmark_file = "/opt/server-os/configs/bookmarks.yml"
+startup_path = "/home"
+
+[tools.search]
+enabled = true
+command = "television"
+config_file = "/opt/server-os/configs/television.toml"
+search_paths = ["/home", "/opt", "/var/log", "/etc"]
+max_results = 100
+case_sensitive = false
+
+[tools.disk]
+enabled = true
+command = "wiper"
+scan_paths = ["/", "/home", "/var", "/opt"]
+size_threshold = "1GB"
+exclude_paths = ["/proc", "/sys", "/dev"]
+
+[tools.system]
+enabled = true
+command = "bottom"
+config_file = "/opt/server-os/configs/bottom.toml"
+update_rate = 1000  # milliseconds
+show_process_tree = true
+show_network = true
+show_disks = true
+
+[tools.network]
+enabled = true
+command = "bandwhich"
+interface = "all"
+show_dns = true
+show_connections = true
+raw_mode = false
+
+[tools.trace]
+enabled = true
+command = "trippy"
+config_file = "/opt/server-os/configs/trippy.toml"
+default_target = "8.8.8.8"
+packet_size = 64
+max_hops = 30
+timeout = 5000  # milliseconds
+
+# Security Tools Configuration
+[security]
+enabled = true
+data_dir = "/opt/server-os/security"
+log_dir = "/var/log/server-os/security"
+alert_email = "admin@server.local"
+
+[security.guard]
+enabled = true
+command = "heimdall"
+config_file = "/opt/server-os/configs/heimdall.toml"
+log_files = [
+    "/var/log/auth.log",
+    "/var/log/syslog",
+    "/var/log/nginx/access.log",
+    "/var/log/apache2/access.log"
+]
+ban_time = 3600      # seconds
+max_attempts = 5
+whitelist_ips = ["127.0.0.1", "::1"]
+
+[security.firewall]
+enabled = true
+command = "dfw"
+config_file = "/opt/server-os/configs/dfw.toml"
+backend_driver = "iptables"
+default_policy = "drop"
+docker_integration = true
+log_level = "info"
+
+[security.waf]
+enabled = true
+command = "aegis"
+config_file = "/opt/server-os/configs/aegis.toml"
+listen_port = 8080
+backend_ports = [80, 443]
+rate_limit = 100  # requests per minute
+block_duration = 300  # seconds
+
+# System Monitoring Configuration
+[monitoring]
+enabled = true
+cpu_threshold = 80.0      # percentage
+memory_threshold = 85.0   # percentage
+disk_threshold = 90.0     # percentage
+network_threshold = 80.0  # percentage of interface capacity
+
+[monitoring.alerts]
+enabled = true
+email_notifications = true
+log_alerts = true
+webhook_url = ""
+
+# Logging Configuration
+[logging]
+level = "info"
+format = "json"
+rotation = "daily"
+max_size = "100MB"
+max_files = 7
+
+[logging.targets]
+console = true
+file = true
+syslog = false
+journal = true
+
+# Network Configuration
+[network]
+interface = "eth0"
+ipv6_enabled = true
+dns_servers = ["8.8.8.8", "8.8.4.4", "1.1.1.1"]
+
+# Storage Configuration
+[storage]
+data_retention_days = 30
+log_retention_days = 90
+backup_enabled = true
+backup_interval = "daily"
+backup_location = "/opt/server-os/backups"
+
+# Performance Configuration
+[performance]
+max_cpu_cores = 0  # 0 = use all available
+max_memory_gb = 0  # 0 = use system default
+io_priority = "normal"
+process_priority = 0
+
+# Integration Configuration
+[integrations]
+docker_enabled = true
+systemd_enabled = true
+prometheus_enabled = false
+prometheus_port = 9090
+
+# Update Configuration
+[updates]
+auto_update = false
+check_interval = "daily"
+security_updates_only = true
+reboot_required = true
+maintenance_window = "02:00-04:00"

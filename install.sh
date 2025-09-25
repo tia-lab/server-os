@@ -233,8 +233,14 @@ build_tools() {
 install_security_tools() {
     print_status "Configuring server-os security tools..."
 
-    # Create security configuration directory
-    mkdir -p /etc/server-os/security
+    # Create server-os configuration directories
+    mkdir -p /etc/server-os/{security,configs}
+    mkdir -p /opt/server-os/{tools,security,backups}
+    mkdir -p /var/log/server-os/security
+
+    # Copy unified configuration
+    cp server-os.toml /etc/server-os/server-os.toml
+    chmod 644 /etc/server-os/server-os.toml
 
     # Set up basic iptables rules (will be managed by DFW)
     print_status "Setting up basic firewall rules..."

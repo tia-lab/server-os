@@ -1,3 +1,14 @@
+[workspace]
+members = [
+    ".",
+    "src/tools/trippy-master",
+    "src/tools/bandwhich-main",
+    "src/security/heimdall-master",
+    "src/security/dfw-main",
+    "src/security/aegis-main"
+]
+resolver = "2"
+
 [package]
 name = "server-os"
 version = "0.1.0"
@@ -11,11 +22,25 @@ ratatui = "0.29"
 crossterm = "0.28"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+toml = "0.8"
 tokio = { version = "1.0", features = ["full"] }
 sysinfo = "0.32"
 chrono = { version = "0.4", features = ["serde"] }
 anyhow = "1.0"
 clap = { version = "4.0", features = ["derive"] }
+
+# Add the tool crates as dependencies so they're built into server-os
+trippy = { path = "src/tools/trippy-master", optional = true }
+bandwhich = { path = "src/tools/bandwhich-main", optional = true }
+heimdall = { path = "src/security/heimdall-master", optional = true }
+dfw = { path = "src/security/dfw-main", optional = true }
+aegis = { path = "src/security/aegis-main", optional = true }
+
+[features]
+default = ["all-tools"]
+all-tools = ["trippy", "bandwhich", "heimdall", "dfw", "aegis"]
+tools-only = ["trippy", "bandwhich"]
+security-only = ["heimdall", "dfw", "aegis"]
 
 [[bin]]
 name = "os"
