@@ -1,0 +1,42 @@
+name: Changelog
+
+on:
+  pull_request:
+
+env:
+  PR_NUMBER: ${{ github.event.number }}
+  PR_BASE: ${{ github.base_ref }}
+
+jobs:
+  get-submitter:
+    name: Get the username of the PR submitter
+    runs-on: ubuntu-latest
+    outputs:
+      submitter: ${{ steps.get-submitter.outputs.submitter }}
+    steps:
+      # cannot use `github.actor`: the triggering commit may be authored by a maintainer
+      - name: Get PR submitter
+        id: get-submitter
+        run: curl -sSfL https://api.github.com/repos/imsnif/bandwhich/pulls/${PR_NUMBER} | jq -r '"submitter=" + .user.login' | tee -a $GITHUB_OUTPUT  
+
+  check-changelog:
+    name: Check for changelog entry
+    needs: get-submitter
+    env:
+      PR_SUBMITTER: ${{ needs.get-submitter.outputs.submitter }}
+    runs-on: ubuntu-latest
+    # allow dependabot PRs to have no changelog
+    if: ${{ needs.get-submitter.outputs.submitter != 'dependabot[bot]' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch PR base
+        run: git fetch --no-tags --prune --depth=1 origin
+
+      - name: Search for added line in changelog
+        run: |
+          ADDED=$(git diff -U0 "origin/${PR_BASE}" HEAD -- CHANGELOG.md | grep -P '^\+[^\+].+$')
+          echo "Added lines in CHANGELOG.md:"
+          echo "$ADDED"
+          echo "Grepping for PR info:"
+          grep -P "(#|pull/)${PR_NUMBER}\\b.*@${PR_SUBMITTER}\\b" <<< "$ADDED"
