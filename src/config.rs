@@ -42,7 +42,6 @@ pub struct DashboardConfig {
 pub struct ToolsConfig {
     pub data_dir: String,
     pub finder: ToolConfig,
-    pub search: SearchConfig,
     pub disk: DiskConfig,
     pub system: SystemConfig,
     pub network: NetworkToolConfig,
@@ -56,15 +55,6 @@ pub struct ToolConfig {
     pub config_file: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SearchConfig {
-    pub enabled: bool,
-    pub command: String,
-    pub config_file: Option<String>,
-    pub search_paths: Vec<String>,
-    pub max_results: usize,
-    pub case_sensitive: bool,
-}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DiskConfig {
@@ -279,15 +269,6 @@ impl ServerOsConfig {
                 enabled: self.tools.finder.enabled,
                 config_file: self.tools.finder.config_file.clone(),
                 extra_args: vec![],
-            }),
-            "search" => Some(ToolCommand {
-                name: "search".to_string(),
-                command: self.tools.search.command.clone(),
-                enabled: self.tools.search.enabled,
-                config_file: self.tools.search.config_file.clone(),
-                extra_args: self.tools.search.search_paths.iter()
-                    .flat_map(|p| vec!["--path".to_string(), p.clone()])
-                    .collect(),
             }),
             "disk" => Some(ToolCommand {
                 name: "disk".to_string(),
@@ -505,14 +486,6 @@ impl Default for ServerOsConfig {
                     enabled: true,
                     command: "xplr".to_string(),
                     config_file: Some("/opt/server-os/configs/xplr.yml".to_string()),
-                },
-                search: SearchConfig {
-                    enabled: true,
-                    command: "television".to_string(),
-                    config_file: Some("/opt/server-os/configs/television.toml".to_string()),
-                    search_paths: vec!["/home".to_string(), "/opt".to_string()],
-                    max_results: 100,
-                    case_sensitive: false,
                 },
                 disk: DiskConfig {
                     enabled: true,

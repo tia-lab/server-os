@@ -1,16 +1,17 @@
-[workspace]
-resolver = "2"
-members = [
-  "crates/trippy",
-  "crates/trippy-tui",
-  "crates/trippy-core",
-  "crates/trippy-packet",
-  "crates/trippy-privilege",
-  "crates/trippy-dns",
-  "examples/*",
-]
+# [workspace]
+# resolver = "2"
+# members = [
+#   "crates/trippy",
+#   "crates/trippy-tui",
+#   "crates/trippy-core",
+#   "crates/trippy-packet",
+#   "crates/trippy-privilege",
+#   "crates/trippy-dns",
+#   "examples/*",
+# ]
 
-[workspace.package]
+[package]
+name = "trippy"
 version = "0.14.0-dev"
 authors = ["FujiApple <fujiapple852@gmail.com>"]
 documentation = "https://github.com/fujiapple852/trippy"

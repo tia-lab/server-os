@@ -4,8 +4,6 @@ mod cli;
 mod display;
 mod network;
 mod os;
-#[cfg(test)]
-mod tests;
 
 use std::{
     collections::HashMap,

@@ -1,17 +1,17 @@
 [package]
 name = "trippy"
 description = "A network diagnostic tool"
-version.workspace = true
-authors.workspace = true
-documentation.workspace = true
-homepage.workspace = true
-repository.workspace = true
+version = "0.14.0-dev"
+authors = ["FujiApple <fujiapple852@gmail.com>"]
+documentation = "https://github.com/fujiapple852/trippy"
+homepage = "https://github.com/fujiapple852/trippy"
+repository = "https://github.com/fujiapple852/trippy"
 readme = "README.md"
-license.workspace = true
-edition.workspace = true
-rust-version.workspace = true
-keywords.workspace = true
-categories.workspace = true
+license = "Apache-2.0"
+edition = "2021"
+rust-version = "1.70"
+keywords = ["cli", "tui", "traceroute", "ping", "icmp"]
+categories = ["command-line-utilities", "network-programming"]
 
 [[bin]]
 name = "trip"
@@ -27,15 +27,12 @@ dns = ["trippy-dns"]
 packet = ["trippy-packet"]
 
 [dependencies]
-trippy-tui = { workspace = true, optional = true }
-trippy-core = { workspace = true, optional = true }
-trippy-privilege = { workspace = true, optional = true }
-trippy-dns = { workspace = true, optional = true }
-trippy-packet = { workspace = true, optional = true }
-anyhow = { workspace = true, optional = true }
-
-[lints]
-workspace = true
+trippy-tui = { version = "0.14.0-dev", path = "../trippy-tui", optional = true }
+trippy-core = { version = "0.14.0-dev", path = "../trippy-core", optional = true }
+trippy-privilege = { version = "0.14.0-dev", path = "../trippy-privilege", optional = true }
+trippy-dns = { version = "0.14.0-dev", path = "../trippy-dns", optional = true }
+trippy-packet = { version = "0.14.0-dev", path = "../trippy-packet", optional = true }
+anyhow = { version = "1.0", optional = true }
 
 [package.metadata.generate-rpm]
 assets = [

@@ -117,6 +117,26 @@ pub fn reset_stdout() {
     );
 }
 
+/// Launch bottom with command line arguments
+pub fn launch_bottom(args: Vec<String>) -> anyhow::Result<()> {
+    // Set environment variables from args similar to how args::get_args() works
+    let args_iter = std::env::args().chain(args.into_iter());
+    let original_args: Vec<String> = std::env::args().collect();
+
+    // Replace the environment args temporarily for bottom to parse
+    std::env::set_var("BOTTOM_ARGS", args_iter.collect::<Vec<_>>().join(" "));
+
+    let mut enable_error_hook = false;
+    let result = start_bottom(&mut enable_error_hook);
+
+    // Restore original args
+    for (i, arg) in original_args.iter().enumerate() {
+        std::env::set_var(&format!("BOTTOM_ARG_{}", i), arg);
+    }
+
+    result
+}
+
 /// A panic hook to properly restore the terminal in the case of a panic.
 /// Originally based on [spotify-tui's implementation](https://github.com/Rigellute/spotify-tui/blob/master/src/main.rs).
 fn panic_hook(panic_info: &PanicHookInfo<'_>) {

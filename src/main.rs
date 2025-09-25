@@ -1,7 +1,8 @@
 mod config;
+mod tools;
 
 use anyhow::Result;
-use config::{ServerOsConfig, ToolCommand};
+use config::ServerOsConfig;
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEventKind},
     execute,
@@ -17,10 +18,12 @@ use ratatui::{
 };
 use std::{
     io,
-    process::{Command, Stdio},
+    sync::{Arc, Mutex},
+    thread,
     time::{Duration, Instant},
 };
 use sysinfo::System;
+use tools::IntegratedTools;
 
 // Tool definitions
 #[derive(Debug, Clone)]
@@ -39,6 +42,36 @@ enum ToolCategory {
     System,
 }
 
+// Background system monitoring data
+#[derive(Clone)]
+struct SystemStats {
+    cpu_usage: f64,
+    memory_usage: f64,
+    disk_usage: f64,
+    uptime: u64,
+    process_count: usize,
+    load_avg: [f64; 3],
+    network_rx: u64,
+    network_tx: u64,
+    temperatures: Vec<f32>,
+}
+
+impl Default for SystemStats {
+    fn default() -> Self {
+        SystemStats {
+            cpu_usage: 0.0,
+            memory_usage: 0.0,
+            disk_usage: 0.0,
+            uptime: 0,
+            process_count: 0,
+            load_avg: [0.0, 0.0, 0.0],
+            network_rx: 0,
+            network_tx: 0,
+            temperatures: Vec::new(),
+        }
+    }
+}
+
 // Application state
 struct App {
     tools: Vec<Tool>,
@@ -48,6 +81,7 @@ struct App {
     last_update: Instant,
     config: ServerOsConfig,
     last_error: Option<String>,
+    system_stats: Arc<Mutex<SystemStats>>,
 }
 
 impl App {
@@ -64,20 +98,6 @@ impl App {
                 command: config.tools.finder.command.clone(),
                 description: "Interactive file manager".to_string(),
                 icon: "📁".to_string(),
-                category: ToolCategory::Core,
-            },
-            Tool {
-                name: "search".to_string(),
-                command: config.tools.search.command.clone(),
-                description: "Fuzzy finder".to_string(),
-                icon: "🔍".to_string(),
-                category: ToolCategory::Core,
-            },
-            Tool {
-                name: "disk".to_string(),
-                command: config.tools.disk.command.clone(),
-                description: "Disk analyzer".to_string(),
-                icon: "💾".to_string(),
                 category: ToolCategory::Core,
             },
             Tool {
@@ -127,6 +147,8 @@ impl App {
         let mut system = System::new_all();
         system.refresh_all();
 
+        let system_stats = Arc::new(Mutex::new(SystemStats::default()));
+
         Ok(Self {
             tools,
             current_tab: 0,
@@ -135,6 +157,7 @@ impl App {
             last_update: Instant::now(),
             config,
             last_error: None,
+            system_stats,
         })
     }
 
@@ -168,10 +191,17 @@ impl App {
         // Clear any previous error
         self.last_error = None;
 
+        // Check if tool is available
+        if !IntegratedTools::is_tool_available(&tool.name) {
+            self.last_error = Some(format!("Tool '{}' is not available or disabled", tool.name));
+            return Ok(());
+        }
+
         // Get tool configuration
         if let Some(tool_cmd) = self.config.get_tool_config(&tool.name) {
             if !tool_cmd.enabled {
-                self.last_error = Some(format!("Tool '{}' is disabled", tool.name));
+                self.last_error =
+                    Some(format!("Tool '{}' is disabled in configuration", tool.name));
                 return Ok(());
             }
 
@@ -181,28 +211,25 @@ impl App {
 
             println!("🚀 Launching {}...", tool.name);
 
-            // Build command with configuration
-            let mut cmd = Command::new(&tool_cmd.command);
+            // Prepare arguments from configuration
+            let mut args = Vec::new();
 
             // Add config file if specified
             if let Some(ref config_file) = tool_cmd.config_file {
-                cmd.args(&["--config", config_file]);
+                args.push("--config".to_string());
+                args.push(config_file.clone());
             }
 
             // Add extra arguments from configuration
-            if !tool_cmd.extra_args.is_empty() {
-                cmd.args(&tool_cmd.extra_args);
-            }
+            args.extend(tool_cmd.extra_args.clone());
 
-            // Execute the tool
-            let status = cmd
-                .stdin(Stdio::inherit())
-                .stdout(Stdio::inherit())
-                .stderr(Stdio::inherit())
-                .status();
+            // Launch the integrated tool
+            let result = IntegratedTools::launch_tool(&tool.name, &args);
 
-            match status {
-                Ok(_) => {},  // Tool completed successfully
+            match result {
+                Ok(_) => {
+                    println!("✅ Tool '{}' completed successfully", tool.name);
+                }
                 Err(e) => {
                     self.last_error = Some(format!("Failed to launch {}: {}", tool.name, e));
                     println!("❌ Failed to launch {}: {}", tool.name, e);
@@ -231,6 +258,45 @@ impl App {
             self.system.refresh_all();
             self.last_update = Instant::now();
         }
+    }
+
+    fn launch_external_tool(&mut self, command: &str) -> Result<()> {
+        use std::process::Command;
+
+        // Clear any previous error
+        self.last_error = None;
+
+        // Clear terminal
+        disable_raw_mode()?;
+        execute!(io::stdout(), LeaveAlternateScreen, DisableMouseCapture)?;
+
+        println!("🚀 Launching {}...", command);
+
+        // Launch the external tool
+        let status = Command::new(command).status()?;
+
+        match status.success() {
+            true => {
+                println!("✅ Tool '{}' completed successfully", command);
+            }
+            false => {
+                self.last_error = Some(format!("Tool '{}' failed with exit code: {:?}", command, status.code()));
+                println!("❌ Tool '{}' failed", command);
+                println!("Press Enter to return to OS dashboard...");
+                let mut input = String::new();
+                io::stdin().read_line(&mut input)?;
+            }
+        }
+
+        // Restore terminal
+        enable_raw_mode()?;
+        execute!(io::stdout(), EnterAlternateScreen, EnableMouseCapture)?;
+
+        // Force system info refresh after tool exit
+        self.system.refresh_all();
+        self.last_update = Instant::now();
+
+        Ok(())
     }
 }
 
@@ -263,6 +329,22 @@ fn main() -> Result<()> {
                     KeyCode::Enter => {
                         if let Err(e) = app.launch_tool() {
                             app.last_error = Some(format!("Error launching tool: {}", e));
+                        }
+                    }
+                    // Simple key mappings for global tools
+                    KeyCode::Char('f') => {
+                        if let Err(e) = app.launch_external_tool("yazi") {
+                            app.last_error = Some(format!("Error launching Yazi: {}", e));
+                        }
+                    }
+                    KeyCode::Char('s') => {
+                        if let Err(e) = app.launch_external_tool("btm") {
+                            app.last_error = Some(format!("Error launching bottom: {}", e));
+                        }
+                    }
+                    KeyCode::Char('n') => {
+                        if let Err(e) = app.launch_external_tool("bandwhich") {
+                            app.last_error = Some(format!("Error launching bandwhich: {}", e));
                         }
                     }
                     _ => {}
@@ -326,7 +408,7 @@ fn ui(f: &mut Frame, app: &mut App) {
     render_security_status(f, app, info_chunks[1]);
 
     // Footer
-    let footer = Paragraph::new("↑↓/jk: Navigate | Enter: Launch | Tab: Switch | q/Esc: Quit")
+    let footer = Paragraph::new("f: Finder (yazi) | s: System (btm) | n: Network (bandwhich) | q/Esc: Quit")
         .style(Style::default().fg(Color::Gray))
         .alignment(Alignment::Center)
         .block(Block::default().borders(Borders::ALL));
