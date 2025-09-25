@@ -1,0 +1,43 @@
+[package]
+name = "trippy"
+description = "A network diagnostic tool"
+version.workspace = true
+authors.workspace = true
+documentation.workspace = true
+homepage.workspace = true
+repository.workspace = true
+readme = "README.md"
+license.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[[bin]]
+name = "trip"
+path = "src/main.rs"
+required-features = ["tui"]
+
+[features]
+default = ["tui"]
+tui = ["trippy-tui", "anyhow"]
+core = ["trippy-core"]
+privilege = ["trippy-privilege"]
+dns = ["trippy-dns"]
+packet = ["trippy-packet"]
+
+[dependencies]
+trippy-tui = { workspace = true, optional = true }
+trippy-core = { workspace = true, optional = true }
+trippy-privilege = { workspace = true, optional = true }
+trippy-dns = { workspace = true, optional = true }
+trippy-packet = { workspace = true, optional = true }
+anyhow = { workspace = true, optional = true }
+
+[lints]
+workspace = true
+
+[package.metadata.generate-rpm]
+assets = [
+  { source = "target/release/trip", dest = "/usr/bin/trip", mode = "755" },
+]

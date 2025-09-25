@@ -77,19 +77,6 @@ data_dir = "/opt/server-os/security"
 log_dir = "/var/log/server-os/security"
 alert_email = "admin@server.local"
 
-[security.guard]
-enabled = true
-command = "heimdall"
-config_file = "/opt/server-os/configs/heimdall.toml"
-log_files = [
-    "/var/log/auth.log",
-    "/var/log/syslog",
-    "/var/log/nginx/access.log",
-    "/var/log/apache2/access.log"
-]
-ban_time = 3600      # seconds
-max_attempts = 5
-whitelist_ips = ["127.0.0.1", "::1"]
 
 [security.firewall]
 enabled = true

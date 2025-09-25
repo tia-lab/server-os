@@ -1,0 +1,23 @@
+name: "Push Binary Cache for Nix"
+on:
+  pull_request:
+  push:
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: nixbuild/nix-quick-install-action@v19
+        with:
+          nix_conf: experimental-features = nix-command flakes
+      - uses: cachix/cachix-action@v11
+        with:
+          name: xplr
+          authtoken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
+      - run: nix profile install .
+      - name: Run tests
+        run: |
+          xplr --version

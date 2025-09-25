@@ -1,0 +1,123 @@
+name: Prepare release
+
+on:
+  push:
+    tags:
+    - '[0-9]+.[0-9]+.[0-9]+'
+    - '[0-9]+.[0-9]+.[0-9]+-*'
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Retrieve cache
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-ci-${{ hashFiles('**/Cargo.lock') }}
+    - name: Install Rust toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
+        override: true
+
+    - name: cargo build --release
+      uses: actions-rs/cargo@v1
+      with:
+        command: build
+        args: --release
+      env:
+        TARGET: x86_64-unknown-linux-musl
+    - name: Create checksum
+      run: |
+        sha256sum target/release/dfw > target/release/dfw.sha256
+
+    - name: Identify if tag is a prerelease
+      id: tag
+      run: |
+        if [[ "${{ github.ref }}" =~ ^refs/tags/(.+)$ ]]; then
+          echo "::set-output name=value::${BASH_REMATCH[1]}"
+        else
+          echo "::error ::Expected a tag"
+          exit 1
+        fi
+
+        if [[ "${{ github.ref }}" =~ ^refs/tags/[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          echo "::set-output name=is-prerelease::false"
+        else
+          echo "::set-output name=is-prerelease::true"
+        fi
+    - name: Extract current changelog
+      id: changelog
+      run:
+        |
+        changelog="$(hack/extract-current-changelog.py CHANGELOG.md)"
+        # https://github.community/t/set-output-truncates-multiline-strings/16852/3
+        changelog="${changelog//'%'/'%25'}"
+        changelog="${changelog//$'\n'/'%0A'}"
+        changelog="${changelog//$'\r'/'%0D'}"
+
+        echo "::set-output name=value::$changelog"
+
+    - name: Prepare release
+      id: prepare-release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: v${{ github.ref }}
+        draft: true
+        prerelease: ${{ steps.tag.outputs.is-prerelease }}
+        body: |
+          # Summary
+
+          TODO!
+
+          ## Changes
+
+          ${{ steps.changelog.outputs.value }}
+
+          ## Installation
+
+          While you can use Cargo to install `dfw` as a binary, using the Docker image is the preferred way to go, especially if you don't want to install Rust and Cargo on your host:
+
+          ```console
+          $ docker pull pitkley/dfw:${{ steps.tag.outputs.value }}
+          $ docker run -d \
+                --name=dfw \
+                --restart=unless-stopped \
+                -v /var/run/docker.sock:/var/run/docker.sock:ro \
+                -v /path/to/your/config:/config \
+                --net host --cap-add=NET_ADMIN \
+                pitkley/dfw:${{ steps.tag.outputs.value }} --config-path /config
+          ```
+
+          This will download a lightweight image, coming in at around 20 MB, and subsequently run it using your configuration.
+          The image supports multiple architectures: `amd64`, `arm64`, `armv7` (specifically `armhf`).
+
+    - name: Upload static DFW binary
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.prepare-release.outputs.upload_url }}
+        asset_path: target/release/dfw
+        asset_name: dfw-x86_64-unknown-linux-musl
+        asset_content_type: application/octet-stream
+    - name: Upload static DFW binary checksum
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.prepare-release.outputs.upload_url }}
+        asset_path: target/release/dfw.sha256
+        asset_name: dfw-x86_64-unknown-linux-musl.sha256
+        asset_content_type: application/octet-stream
