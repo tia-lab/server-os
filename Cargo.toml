@@ -8,32 +8,13 @@ description = "Security-hardened server OS dashboard launcher"
 license = "MIT"
 
 [dependencies]
-ratatui = { workspace = true }
-crossterm = { workspace = true }
-serde = { workspace = true }
-serde_json = { workspace = true }
-toml = { workspace = true }
-tokio = { workspace = true }
-anyhow = { workspace = true }
-clap = { workspace = true }
+rustyline = "14.0"
+anyhow = "1.0"
+clap = { version = "4.0", features = ["derive"] }
 sysinfo = "0.32"
-chrono = { version = "0.4", features = ["serde"] }
-
-# Add the tool crates as dependencies so they're built into server-os
-bandwhich = { path = "src/tools/bandwhich-main", optional = true }
-yazi-fm = { path = "src/tools/yazi-main/yazi-fm", optional = true }
-bottom = { path = "src/tools/bottom-main", optional = true }
-# Temporarily disabled due to compilation issues
-# trippy = { path = "src/tools/trippy-master/crates/trippy", optional = true }
-# heimdall = { path = "src/security/heimdall-master", optional = true }
-# dfw = { path = "src/security/dfw-main", optional = true }
-# aegis = { path = "src/security/aegis-main", optional = true }
-
-[features]
-default = ["bandwhich", "yazi-fm", "bottom"]
-all-tools = ["bandwhich", "yazi-fm", "bottom"] # , "trippy", "heimdall", "dfw", "aegis"]
-tools-only = ["bandwhich", "yazi-fm", "bottom"] # , "trippy"]
-# security-only = ["heimdall", "dfw", "aegis"]
+notify = "6.1"
+pnet = "0.35"
+ring = "0.17"
 
 [[bin]]
 name = "os"
