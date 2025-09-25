@@ -37,7 +37,6 @@ impl ServerOsHelper {
             },
         );
 
-
         tools.insert(
             ":system".to_string(),
             Tool {
@@ -54,7 +53,6 @@ impl ServerOsHelper {
             },
         );
 
-
         tools.insert(
             ":trace".to_string(),
             Tool {
@@ -62,7 +60,6 @@ impl ServerOsHelper {
                 description: "Trippy network diagnostics (traces to 8.8.8.8)".to_string(),
             },
         );
-
 
         tools.insert(
             ":firewall".to_string(),
@@ -218,7 +215,8 @@ fn show_status() {
     // System Info
     println!("\n📊 System Information:");
     println!("  • CPU Usage: {:.1}%", sys.global_cpu_usage());
-    println!("  • Memory: {:.1} GB / {:.1} GB",
+    println!(
+        "  • Memory: {:.1} GB / {:.1} GB",
         sys.used_memory() as f64 / 1024.0 / 1024.0 / 1024.0,
         sys.total_memory() as f64 / 1024.0 / 1024.0 / 1024.0
     );
