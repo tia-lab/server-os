@@ -11,6 +11,8 @@ Server OS provides:
 - **Self-updating** mechanism to stay current with latest features
 - **Shell pass-through** for direct command execution
 
+test git sync
+
 ## 🎯 Quick Start
 
 ```bash
