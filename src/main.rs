@@ -62,20 +62,13 @@ impl ServerOsHelper {
         );
 
         tools.insert(
-            ":firewall".to_string(),
+            ":git".to_string(),
             Tool {
-                command: "dfw --help".to_string(),
-                description: "DFW Docker firewall (shows help - needs config)".to_string(),
+                command: "serie".to_string(),
+                description: "Serie git graph viewer".to_string(),
             },
         );
 
-        tools.insert(
-            ":waf".to_string(),
-            Tool {
-                command: "aegis".to_string(),
-                description: "Aegis web application firewall".to_string(),
-            },
-        );
 
         tools.insert(
             ":help".to_string(),
