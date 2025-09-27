@@ -1,64 +1,47 @@
 #!/bin/bash
 
-echo "🚀 Installing Server OS Tools..."
+# Server OS Main Installation Script
+# Installs only the core server-os REPL
 
-# Core TUI Tools from our codebase
-echo "📁 Installing xplr file manager..."
-cargo install --path tools/xplr-main
+set -e
 
-echo "📁 Installing Yazi file manager..."
-cargo install --path tools/yazi-main/yazi-fm
-cargo install --path tools/yazi-main/yazi-cli
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-echo "📊 Installing bottom system monitor..."
-cargo install --path tools/bottom-main
+echo "🖥️  Server OS Installation"
+echo "=========================="
+echo ""
+echo "Version: $(grep '^version' Cargo.toml | head -1 | cut -d'"' -f2)"
+echo ""
 
-echo "🌐 Installing bandwhich network monitor..."
-cargo install --path tools/bandwhich-main
+# Check for Rust installation
+if ! command -v cargo &> /dev/null; then
+    echo "❌ Cargo not found. Please install Rust first:"
+    echo "   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh"
+    exit 1
+fi
 
-echo "🌐 Installing trippy network diagnostics..."
-cargo install --path tools/trippy-master/crates/trippy
-
-# Security Tools
-echo "🔥 Installing DFW Docker Firewall..."
-cargo install --path security/dfw-main
-
-echo "🌐 Installing Aegis WAF..."
-cargo install --path security/aegis-main
-
-# Optional: Install additional tools (external)
-echo "🔍 Installing ripgrep for searching..."
-cargo install ripgrep
-
-echo "⚡ Installing fd for finding files..."
-cargo install fd-find
-
-echo "📖 Installing bat for viewing files..."
-cargo install bat
-
-# Install our OS wrapper with integrated security crates
-echo "🖥️ Installing OS wrapper with security integrations..."
-echo "   📦 Includes: sysinfo, notify, pnet, ring security crates"
+echo "📦 Building and installing Server OS REPL..."
+cargo build --release
 cargo install --path .
 
-echo "✅ Installation complete!"
 echo ""
-echo "Available commands:"
-echo "  yazi      - File manager"
-echo "  btm       - System monitor (bottom)"
-echo "  bandwhich - Network monitor"
-echo "  trip      - Network diagnostics (trippy)"
-echo "  dfw       - Docker firewall (needs config)"
-echo "  aegis     - Web application firewall"
-echo "  rg        - Search files (ripgrep)"
-echo "  fd        - Find files"
-echo "  bat       - View files with syntax highlighting"
-echo "  os        - Server OS dashboard with integrated security"
+echo "✅ Server OS installed successfully!"
 echo ""
-echo "🛡️ Security Features:"
-echo "  - System monitoring (sysinfo crate)"
-echo "  - File integrity monitoring (notify crate)"
-echo "  - Network packet analysis (pnet crate)"
-echo "  - Cryptographic operations (ring crate)"
+echo "🚀 Usage: os"
 echo ""
-echo "🎯 Try: os"
+echo "Available commands in REPL:"
+echo "  :help     - Show all available commands"
+echo "  :finder   - Launch file manager (requires yazi)"
+echo "  :system   - Launch system monitor (requires btm)"
+echo "  :network  - Launch network monitor (requires bandwhich)"
+echo "  :trace    - Network diagnostics (requires trippy)"
+echo "  :update   - Update Server OS to latest version"
+echo "  :exit     - Exit the REPL"
+echo ""
+echo "📋 Shell commands can be run directly without prefix"
+echo ""
+echo "📦 Optional installations:"
+echo "  ./install-tools.sh    - Install file managers and monitors"
+echo "  ./install-security.sh - Install security tools"
+echo ""
+echo "🎯 Try: os

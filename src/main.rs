@@ -93,6 +93,14 @@ impl ServerOsHelper {
             },
         );
 
+        tools.insert(
+            ":update".to_string(),
+            Tool {
+                command: "update".to_string(),
+                description: "Update Server OS to latest version".to_string(),
+            },
+        );
+
         Self {
             completer: FilenameCompleter::new(),
             highlighter: MatchingBracketHighlighter::new(),
@@ -201,6 +209,56 @@ fn show_help(tools: &HashMap<String, Tool>) {
 
     for (cmd, tool) in tool_list {
         println!("  {:<12} - {}", cmd, tool.description);
+    }
+    println!();
+}
+
+fn update_server_os() {
+    println!("\n🔄 Updating Server OS...");
+    println!("═══════════════════════════════");
+
+    // Pull latest from git
+    println!("📥 Fetching latest version from GitHub...");
+    let git_pull = Command::new("git")
+        .args(&["pull", "origin", "main"])
+        .status();
+
+    match git_pull {
+        Ok(status) if status.success() => {
+            println!("✅ Repository updated");
+
+            // Rebuild and reinstall
+            println!("🔨 Building latest version...");
+            let build_result = Command::new("cargo")
+                .args(&["build", "--release"])
+                .status();
+
+            match build_result {
+                Ok(status) if status.success() => {
+                    println!("📦 Installing...");
+                    let install_result = Command::new("cargo")
+                        .args(&["install", "--path", "."])
+                        .status();
+
+                    match install_result {
+                        Ok(status) if status.success() => {
+                            println!("✅ Server OS updated successfully!");
+                            println!("🔄 Please restart 'os' to use the new version");
+                        }
+                        _ => eprintln!("❌ Installation failed"),
+                    }
+                }
+                _ => eprintln!("❌ Build failed"),
+            }
+        }
+        Ok(_) => {
+            println!("⚠️  No updates available or git pull failed");
+            println!("   Make sure you're in the server-os directory");
+        }
+        Err(e) => {
+            eprintln!("❌ Failed to run git: {}", e);
+            eprintln!("   Make sure git is installed and you're in the server-os directory");
+        }
     }
     println!();
 }
@@ -321,6 +379,15 @@ fn main() -> Result<()> {
                         if input == ":status" {
                             show_status();
                             continue;
+                        }
+
+                        if input == ":update" {
+                            update_server_os();
+                            continue;
+                        }
+
+                        if input == ":exit" || input == ":quit" {
+                            break;
                         }
 
                         if let Some(tool) = helper.tools.get(input) {

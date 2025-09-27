@@ -1,106 +1,165 @@
-# 🛡️ server-os
+# 🛡️ Server OS - Security-Hardened Server REPL
 
-**Security-Hardened Server Operating System**
-*Complete Rust TUI Stack + Security Tools*
+A lightweight, security-focused REPL for server management with integrated tools and monitoring capabilities.
 
 ## 🚀 Overview
 
-server-os is a golden standard server environment that provides:
-- **Complete TUI stack** for file management, system monitoring, and network analysis
-- **Security-hardened tools** for intrusion detection and firewall management
-- **Zero sync issues** - direct server operations, perfect VS Code Remote SSH compatibility
-- **100% Rust** - consistent performance, memory safety, zero garbage collection
+Server OS provides:
+- **Interactive REPL** with command history and tab completion
+- **Security integration** with system monitoring capabilities
+- **Tool integration** for file management, system monitoring, and network analysis
+- **Self-updating** mechanism to stay current with latest features
+- **Shell pass-through** for direct command execution
 
 ## 🎯 Quick Start
 
 ```bash
-# Deploy to any server
-curl -sSL https://raw.githubusercontent.com/yourusername/server-os/main/install.sh | bash
+# Clone the repository
+git clone https://github.com/tia-lab/server-os.git
+cd server-os
 
-# SSH into server
-ssh root@your-server
+# Install the core REPL
+./install.sh
 
-# Launch OS dashboard
+# Run Server OS
 os
 ```
 
+## 📦 Installation Options
+
+### Core Installation
+```bash
+./install.sh  # Installs only the server-os REPL
+```
+
+### Optional Tools
+```bash
+./install-tools.sh     # Interactive installer for file managers and monitors
+./install-security.sh  # Interactive installer for security tools
+```
+
+## 🎛️ Available Commands
+
+Once in the REPL (`os`), use these commands:
+
+| Command | Description | Requires Tool |
+|---------|-------------|---------------|
+| `:help` | Show all available commands | - |
+| `:status` | Display system security status | - |
+| `:update` | Update Server OS to latest version | - |
+| `:exit` | Exit the REPL | - |
+| `:finder` | Launch Yazi file manager | yazi |
+| `:system` | Launch bottom system monitor | btm |
+| `:network` | Launch bandwhich network monitor | bandwhich |
+| `:trace` | Network diagnostics with trippy | trippy |
+| `:firewall` | Docker firewall configuration | dfw |
+| `:waf` | Web application firewall | aegis |
+
+**Note**: Shell commands can be run directly without any prefix.
+
+## 🔄 Self-Updating
+
+Server OS includes a built-in update mechanism:
+
+```bash
+# From within the REPL
+os> :update
+```
+
+This will:
+1. Pull the latest version from GitHub
+2. Rebuild the application
+3. Install the updated version
+4. Prompt you to restart
+
 ## 🛠️ Tool Stack
 
-### Core TUI Tools (6)
-| Command | Tool | Purpose |
-|---------|------|---------|
-| `finder` | [xplr](https://github.com/sayanarijit/xplr) | Interactive file manager |
-| `search` | [television](https://github.com/alexpasmantier/television) | Fuzzy finder |
-| `disk` | [wiper](https://github.com/ikebastuz/wiper) | Disk analyzer |
-| `system` | [bottom](https://github.com/ClementTsang/bottom) | System monitor |
-| `network` | [bandwhich](https://github.com/imsnif/bandwhich) | Network monitor |
-| `trace` | [trippy](https://github.com/fujiapple852/trippy) | Network diagnostics |
+### Core TUI Tools (Optional)
+| Tool | Purpose | Install Via |
+|------|---------|------------|
+| [yazi](https://github.com/sxyazi/yazi) | Terminal file manager | `install-tools.sh` |
+| [xplr](https://github.com/sayanarijit/xplr) | File explorer | `install-tools.sh` |
+| [bottom](https://github.com/ClementTsang/bottom) | System monitor | `install-tools.sh` |
+| [bandwhich](https://github.com/imsnif/bandwhich) | Network monitor | `install-tools.sh` |
+| [trippy](https://github.com/fujiapple852/trippy) | Network diagnostics | `install-tools.sh` |
 
-### Security Tools (3)
-| Command | Tool | Purpose |
-|---------|------|---------|
-| `guard` | [Heimdall](https://github.com/acriba/heimdall) | Intrusion detection (fail2ban alternative) |
-| `firewall` | [DFW](https://github.com/pitkley/dfw) | Docker firewall framework |
-| `waf` | [Aegis](https://github.com/utibeabasi6/aegis) | Web application firewall |
-
-## 🎛️ OS Dashboard
-
-The `os` command launches a comprehensive ratatui-based dashboard:
-
-```
-┌─ Secure Server OS Dashboard ───────────────────────────┐
-│  ╭─ Tools ─────╮    ╭─ Security Status ──╮            │
-│  │ 📁 finder    │    │ 🔒 Firewall: Active │            │
-│  │ 🔍 search    │    │ 🛡️  IDS: Monitoring  │            │
-│  │ 💾 disk      │    │ 🚫 Blocked: 42 IPs   │            │
-│  │ 📊 system    │    │ ⚠️  Alerts: 3 new    │            │
-│  │ 🌐 network   │    ╰─────────────────────╯            │
-│  │ 📍 trace     │                                      │
-│  ╰─────────────╯    ╭─ Security Tools ────╮            │
-│                     │ 🛡️  guard (IDS)      │            │
-│  ╭─ System ────╮    │ 🔥 firewall (UFW)    │            │
-│  │ CPU: ███░░   │    │ 🌐 waf (WAF)        │            │
-│  │ RAM: ████░   │    │ 🔍 logs             │            │
-│  ╰─────────────╯    ╰─────────────────────╯            │
-└────────────────────────────────────────────────────────┘
-```
+### Security Tools (Optional)
+| Tool | Purpose | Install Via |
+|------|---------|------------|
+| [DFW](https://github.com/pitkley/dfw) | Docker firewall | `install-security.sh` |
+| [Aegis](https://github.com/utibeabasi6/aegis) | Web application firewall | `install-security.sh` |
 
 ## 📁 Project Structure
 
 ```
 server-os/
-├── launcher/           # Ratatui OS dashboard
-│   ├── src/main.rs     # Dashboard implementation
-│   └── Cargo.toml      # Dependencies
 ├── src/
-│   ├── tools/         # TUI tool source code
-│   │   ├── trippy-master/    # Network diagnostics
-│   │   └── bandwhich-main/   # Network monitor
-│   └── security/      # Security tool source code
-│       ├── heimdall-master/  # Intrusion detection
-│       ├── dfw-main/         # Docker firewall
-│       └── aegis-main/       # Web application firewall
-├── install.sh         # Main installer
-├── Cargo.toml         # Workspace configuration
-└── README.md          # This file
+│   └── main.rs           # Core REPL implementation
+├── tools/                # Optional tool sources
+│   ├── yazi-main/        # File manager
+│   ├── xplr-main/        # File explorer
+│   ├── bottom-main/      # System monitor
+│   ├── bandwhich-main/   # Network monitor
+│   └── trippy-master/    # Network diagnostics
+├── security/             # Security tool sources
+│   ├── dfw-main/         # Docker firewall
+│   └── aegis-main/       # Web application firewall
+├── install.sh            # Main installer (REPL only)
+├── install-tools.sh      # Optional tools installer
+├── install-security.sh   # Security tools installer
+├── Cargo.toml            # Project configuration
+└── README.md             # This file
 ```
 
 ## 🛡️ Security Features
 
-- **Intrusion Detection**: Heimdall monitors logs and blocks malicious IPs
-- **Firewall Management**: DFW provides container-aware firewall rules  
-- **Web Protection**: Aegis WAF filters malicious web requests
-- **Network Monitoring**: Real-time bandwidth and connection tracking
-- **Log Analysis**: Centralized security event monitoring
+Server OS integrates several security-focused Rust crates:
 
-## 🚀 Performance
+- **sysinfo**: System monitoring and process management
+- **notify**: File system event monitoring
+- **pnet**: Network packet analysis
+- **ring**: Cryptographic operations
 
-- **Zero sync issues** with VS Code Remote SSH
-- **Sub-second startup** for all tools  
-- **Memory efficient** - no garbage collection overhead
-- **CPU optimized** - Rust's zero-cost abstractions
-- **Network optimized** - async I/O throughout
+## 💻 Requirements
+
+- **Rust** 1.70+ (install via [rustup](https://rustup.rs/))
+- **Git** (for update functionality)
+- **OS**: Linux/macOS (Windows support via WSL)
+
+## 🚀 Usage Examples
+
+```bash
+# Launch Server OS
+os
+
+# Check system status
+os> :status
+
+# Run shell commands directly
+os> ls -la
+os> docker ps
+os> systemctl status nginx
+
+# Launch integrated tools (if installed)
+os> :finder   # File manager
+os> :system   # System monitor
+os> :network  # Network monitor
+
+# Update to latest version
+os> :update
+
+# Exit
+os> :exit
+```
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit pull requests or open issues on the [GitHub repository](https://github.com/tia-lab/server-os).
+
+## 📄 License
+
+This project is licensed under the MIT License.
 
 ---
 
-**🛡️ server-os** - *Secure, Fast, Reliable Server Management*
+**Server OS** - *Lightweight, Secure, Efficient Server Management*
